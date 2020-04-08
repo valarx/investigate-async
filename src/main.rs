@@ -1,7 +1,13 @@
 use futures::executor::block_on;
+//use rand::rngs::ThreadRng;
+use rand::{thread_rng, Rng};
+use std::time::Duration;
 
-async fn get_string() -> String {
-    return "s".to_owned();
+async fn get_string(input: i32) -> String {
+    let mut rng = thread_rng();
+    let sleep_time = rng.gen_range(1, 5);
+    async_std::task::sleep(Duration::from_secs(sleep_time)).await;
+    return format!("{} slept {}", input.to_string(), sleep_time);
 }
 
 async fn collect_strings(n: i32) -> Vec<String> {
@@ -11,8 +17,8 @@ async fn collect_strings(n: i32) -> Vec<String> {
     while jobs_left > 0 {
         let mut fut = vec![];
         let iterations = std::cmp::min(jobs_left, batch_size);
-        for _ in 0..iterations {
-            fut.push(get_string());
+        for i in 0..iterations {
+            fut.push(get_string(i));
         }
         result.extend(futures::future::join_all(fut).await);
         jobs_left = jobs_left - iterations;
@@ -21,8 +27,7 @@ async fn collect_strings(n: i32) -> Vec<String> {
 }
 
 fn main() {
-    let result = block_on(collect_strings(18));
-    for r in result {
+    for r in block_on(collect_strings(18)) {
         println!("{}", r);
     }
 }
